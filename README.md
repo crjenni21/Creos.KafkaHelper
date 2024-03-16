@@ -33,7 +33,7 @@ Or if you wish, you can define a unique producer for each topic.
 The Consumers list is an optional list of consumers within your application.  
 
 Each consumer can be configured to consume from 1 or more topics.  
-A topic name can even be wildcarded with an astricks to support multiple topics matching a pattern.
+A topic name can even be wildcarded with an asterisk to support multiple topics matching a pattern.
 
 Multiple consumers are processed concurrently.   
 
