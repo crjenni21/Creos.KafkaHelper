@@ -1,15 +1,15 @@
 # Creos.KafkaHelper
 
 ## Supported Frameworks:
-.NET 6
-.NET 8
+ - .NET 6
+ - .NET 8
 
 ## Overall 
 
 This is a simple library that eases the producing and consuming from Kafka.  
-It is designed to be configurable via the appsettings.json file and allows consuming and producing to multiple topics.
+It is designed to be configurable via Configuration and allows consuming and producing to multiple topics.
 
-There are three base properties that are configurable within the appsettings file:
+There are three base properties that are configurable within the Configuration:
 
 ```
   "KafkaConfiguration": {
@@ -44,33 +44,33 @@ Multiple consumers are processed concurrently.
 
 ### Producer Properties
 
-ProducerName: (Required) This must be unique amongst all Producers defined within your appsettings.  This is an arbitrary string that you will reference within your application to determine which ProducerSettings you want to Produce to.   
-Brokers: (Optional) If this is set, this will override the Broker List defined in the parent configuration -- "KafkaConfiguration:Brokers".
-Topic:  (Optional) This is the default topic that a Kafka Message is produced to if not explicitly defined within your application.   (Not required)
-Active:  (Optional) Boolean (true or false) option where this Producer could be not used.  Default:  true
-Partitioner:  (Optional) Possible settings are defined within the Confluent.Kafka.Partitioner enum:  Default: ConsistentRandom
-LingerMS:  (Optional) Producer Linger defined in milliseconds.   Default: 1000
-BatchSizeBytes:  (Optional)  Producer BatchSize in bytes.  Default: 1000000
+ - **ProducerName**: (Required) This must be unique amongst all Producers defined within your Configuration.  This is an arbitrary string that you will reference within your application to determine which ProducerSettings you want to Produce to.   
+ - Brokers: (Optional) If this is set, this will override the Broker List defined in the parent configuration -- "KafkaConfiguration:Brokers".
+ - Topic:  (Optional) This is the default topic that a Kafka Message is produced to if not explicitly defined within your application.   (Not required)
+ - Active:  (Optional) Boolean (true or false) option where this Producer could be not used.  Default:  true
+ - Partitioner:  (Optional) Possible settings are defined within the Confluent.Kafka.Partitioner enum:  Default: ConsistentRandom
+ - LingerMS:  (Optional) Producer Linger defined in milliseconds.   Default: 1000
+ - BatchSizeBytes:  (Optional)  Producer BatchSize in bytes.  Default: 1000000
 
 ### Consumer Properties
 
-ConsumerName: (Required) This must be unique amongst all Consumers defined within your appsettings.  This is an arbitrary string that you will reference within your application to determine which Consumer you want to consumer from. 
-Brokers: (Optional) If this is set, this will override the Broker List defined in the parent configuration -- "KafkaConfiguration:Brokers".
-EnableAutoCommit:  (Optional)  While Kafka guarantees at-least-once delivery.  Setting this to false also empowers the application to guarantee at-least-once successful delivery.    Default: true
-BatchOffsetsToCommit:  (Optional)  Default: 500
-FrequencyToCommitMs:  (Optional)  This setting is ignored if EnableAutoCommit is set to true.   Else, this defines the frequency at which the most recently successful consumed offset (per partition) is committed.  Default: 1000
-GroupID:  (Required)  This setting defines the name of the ConsumerGroup.
-Topics: (Required)  This setting defines the topic or topics assigned to this consumer.  This does support a wildcarded topic name.  
-Active:  (Optional) Boolean (true or false) option where this Consumer could be not used.  Default:  true
-ConsumeFromDate: (Optional)  Experimental option that allows for an offset to be reset to a particular date.  This setting could potentially be removed in a future update. 
-StatisticsIntervalMs:  (Optional)  Overrides default if explicitly set. 
-SessionTimeoutMs:  (Optional)  Overrides default if explicitly set. 
-EnablePartitionEof:  (Optional)  Overrides default if explicitly set. 
-ReconnectBackoffMs:  (Optional)  Overrides default if explicitly set. 
-HeartbeatIntervalMs:  (Optional)  Overrides default if explicitly set. 
-ReconnectBackoffMaxMs:  (Optional)  Overrides default if explicitly set. 
-FetchMaxBytes:  (Optional)  Overrides default if explicitly set. 
-AutoCommitIntervalMs:  (Optional)  Overrides default if explicitly set. 
+ - **ConsumerName**: (Required) This must be unique amongst all Consumers defined within your Configuration.  This is an arbitrary string that you will reference within your application to determine which Consumer you want to consumer from. 
+ - Brokers: (Optional) If this is set, this will override the Broker List defined in the parent configuration -- "KafkaConfiguration:Brokers".
+ - EnableAutoCommit:  (Optional)  While Kafka guarantees at-least-once delivery.  Setting this to false also empowers the application to guarantee at-least-once successful delivery.    Default: true
+ - BatchOffsetsToCommit:  (Optional)  Default: 500
+ - FrequencyToCommitMs:  (Optional)  This setting is ignored if EnableAutoCommit is set to true.   Else, this defines the frequency at which the most recently successful consumed offset (per partition) is committed.  Default: 1000
+ - **GroupID**:  (Required)  This setting defines the name of the ConsumerGroup.
+ - **Topics**: (Required)  This setting defines the topic or topics assigned to this consumer.  This does support a wildcarded topic name.  
+ - Active:  (Optional) Boolean (true or false) option where this Consumer could be not used.  Default:  true
+ - ConsumeFromDate: (Optional)  Experimental option that allows for an offset to be reset to a particular date.  This setting could potentially be removed in a future update. 
+ - StatisticsIntervalMs:  (Optional)  Overrides default if explicitly set. 
+ - SessionTimeoutMs:  (Optional)  Overrides default if explicitly set. 
+ - EnablePartitionEof:  (Optional)  Overrides default if explicitly set. 
+ - ReconnectBackoffMs:  (Optional)  Overrides default if explicitly set. 
+ - HeartbeatIntervalMs:  (Optional)  Overrides default if explicitly set. 
+ - ReconnectBackoffMaxMs:  (Optional)  Overrides default if explicitly set. 
+ - FetchMaxBytes:  (Optional)  Overrides default if explicitly set. 
+ - AutoCommitIntervalMs:  (Optional)  Overrides default if explicitly set. 
 
 
 
@@ -80,9 +80,9 @@ AutoCommitIntervalMs:  (Optional)  Overrides default if explicitly set.
 
 Start a new class that inherits from ConsumerBackgroundService.  This is a traditional .NET BackgroundService
 Within the ConsumerBackgroundService contructor:
-1: Pass in a reference to IServiceProvider
-2: Use the IServiceProvider implemenation to get your applicable consumer instance via the Consumer:Name property defined in your appsettings.json
-3: Expose your instance of ConsumerMember for later use.
+1. Pass in a reference to IServiceProvider
+2. Use the IServiceProvider implemenation to get your applicable consumer instance via the Consumer:Name property defined in your Configuration
+3. Expose your instance of ConsumerMember for later use.
 
 ```
     public class ConsumerHostedService : ConsumerBackgroundService
