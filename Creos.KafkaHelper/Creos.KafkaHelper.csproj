@@ -12,6 +12,7 @@
 		<Description>This is a simple library that eases the producing and consuming from Kafka. </Description>
 		<PackageProjectUrl>https://github.com/crjenni21/Creos.KafkaHelper</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/crjenni21/Creos.KafkaHelper</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
@@ -33,9 +34,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
-    
-    
-  </ItemGroup>
+    	<PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+    </ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath=""/>
+	</ItemGroup>
 
 </Project>
