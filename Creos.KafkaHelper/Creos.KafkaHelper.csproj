@@ -4,8 +4,9 @@
 		<OutputType>Library</OutputType>
 		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.1.0</AssemblyVersion>
+		<FileVersion>1.0.1.0</FileVersion>
+		<Version>1.0.1</Version>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<Title>Creos.KafkaHelper</Title>
 		<Authors>Christopher Jennings</Authors>
@@ -13,6 +14,7 @@
 		<PackageProjectUrl>https://github.com/crjenni21/Creos.KafkaHelper</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/crjenni21/Creos.KafkaHelper</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
@@ -39,6 +41,7 @@
 
 	<ItemGroup>
 		<None Include="..\README.md" Pack="true" PackagePath=""/>
+		<None Include="..\LICENSE" Pack="true" PackagePath=""/>
 	</ItemGroup>
 
 </Project>
