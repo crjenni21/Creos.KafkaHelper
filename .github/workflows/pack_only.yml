@@ -1,0 +1,46 @@
+name: pack_only
+on:
+  workflow_dispatch: # Allow running the workflow manually from the GitHub UI
+  push:
+    branches:
+      - 'main'       # Run the workflow when pushing to the main branch
+  pull_request:
+    branches:
+      - '*'          # Run the workflow for all pull requests
+  # release:
+  #   types:
+  #     - published    # Run the workflow when a new GitHub release is published
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace}}/nuget
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  create_nuget:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # Install the .NET SDK
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8'
+
+    # Create the NuGet package in the folder from the environment variable NuGetDirectory
+    - run: dotnet pack Creos.KafkaHelper/Creos.KafkaHelper.csproj --configuration Release --output ${{ env.NuGetDirectory }}
+
+    # Publish the NuGet package as an artifact, so they can be used in the following jobs
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nuget
+        if-no-files-found: error
+        retention-days: 7
+        path: ${{ env.NuGetDirectory }}/*.nupkg
