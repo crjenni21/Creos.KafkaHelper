@@ -58,7 +58,7 @@ namespace Creos.KafkaHelper.Consumer
 
                 if (!topics.Contains(topic))
                 {
-                    if (topic.Contains('*'))
+                    if (topic.Contains('*') || topic.Contains('+'))
                     {
                         topics.AddRange(await _helper.GetTopicsFromWildcardAsync(topic).ConfigureAwait(false));
                     }
