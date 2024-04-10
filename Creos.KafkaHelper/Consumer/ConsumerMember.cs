@@ -162,59 +162,68 @@ namespace Creos.KafkaHelper.Consumer
 
         public async Task ExecuteConsumingAsync(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                long offset = 0;
-                ConsumeResult<string, string> consumeResult = null;
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    consumeResult = ConsumerInstance.Consume(cancellationToken);
-                    if (!consumeResult.IsPartitionEOF)
+                    long offset = 0;
+                    ConsumeResult<string, string> consumeResult = null;
+                    try
                     {
-                        if (!string.IsNullOrWhiteSpace(consumeResult?.Message?.Value)) // A null value could be a "tombstone record" and may should be handled differently. 
+                        consumeResult = ConsumerInstance.Consume(cancellationToken);
+                        if (!consumeResult.IsPartitionEOF)
                         {
-                            offset = consumeResult.Offset.Value;
+                            if (!string.IsNullOrWhiteSpace(consumeResult?.Message?.Value)) // A null value could be a "tombstone record" and may should be handled differently. 
+                            {
+                                offset = consumeResult.Offset.Value;
 
-                            bool result = await ConsumeEvent(new ConsumeTriggerEventArgs(consumeResult)).ConfigureAwait(false);
-                            if (!result)
-                            {
-                                throw new Exception("KafkaHelper | Consumer Failed. RaiseConsumerTriggered returned false.");
+                                bool result = await ConsumeEvent(new ConsumeTriggerEventArgs(consumeResult)).ConfigureAwait(false);
+                                if (!result)
+                                {
+                                    throw new Exception("KafkaHelper | Consumer Failed. RaiseConsumerTriggered returned false.");
+                                }
                             }
-                        }
-                        if (!ConsumerModel.EnableAutoCommit)
-                        {
-                            var doNotCommit = pauseModels.Any(pc => !pc.Value.CommitPendingMessages && pc.Value.TopicPartitions.Any(tp => tp.Equals(consumeResult.TopicPartition)));
-                            if (!doNotCommit)
+                            if (!ConsumerModel.EnableAutoCommit)
                             {
-                                TopicPartitionOffsets_ToCommit.Add(consumeResult.TopicPartitionOffset);
-                            } else
-                            {
-                                ConsumerInstance.Seek(consumeResult.TopicPartitionOffset);
+                                var doNotCommit = pauseModels.Any(pc => !pc.Value.CommitPendingMessages && pc.Value.TopicPartitions.Any(tp => tp.Equals(consumeResult.TopicPartition)));
+                                if (!doNotCommit)
+                                {
+                                    TopicPartitionOffsets_ToCommit.Add(consumeResult.TopicPartitionOffset);
+                                }
+                                else
+                                {
+                                    ConsumerInstance.Seek(consumeResult.TopicPartitionOffset);
+                                }
                             }
                         }
                     }
-                }
-                catch (TaskCanceledException) { }
-                catch (KafkaException ex)
-                {
-                    if (ex.Message == "Broker: Group rebalance in progress")
+                    catch (TaskCanceledException) { }
+                    catch (KafkaException ex)
                     {
-                        _logger.LogWarning(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                        if (ex.Message == "Broker: Group rebalance in progress")
+                        {
+                            _logger.LogWarning(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                        }
+                        else
+                        {
+                            _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                            ConsumerIsActive = false;
+                            throw;
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
                         _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
                         ConsumerIsActive = false;
                         throw;
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
-                    ConsumerIsActive = false;
-                    throw;
-                }
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogWarning(ex, "");
+            }
+
         }
 
         #region Pause_Functionality

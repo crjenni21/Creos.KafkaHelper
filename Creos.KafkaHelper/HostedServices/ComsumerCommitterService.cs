@@ -26,31 +26,44 @@ namespace Creos.KafkaHelper.HostedServices
 
         private async Task CommitMessagesAsync(CancellationToken cancellationToken)
         {
-            await Task.Delay(millisecondsDelay: 1000 * 5, cancellationToken).ConfigureAwait(false);
-            _consumerMembers = _serviceProvider.GetServices<ConsumerMember>();
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                await Task.Delay(millisecondsDelay: 1000 * 5, cancellationToken).ConfigureAwait(false);
+                _consumerMembers = _serviceProvider.GetServices<ConsumerMember>();
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    foreach (var consumerMember in _consumerMembers.Where(x => x.ConsumerModel.Active && !x.ConsumerModel.EnableAutoCommit))
+                    try
                     {
-                        if (consumerMember.TopicPartitionOffsets_ToCommit.Count >= consumerMember.ConsumerModel.BatchOffsetsToCommit || (!consumerMember.TopicPartitionOffsets_ToCommit.IsEmpty && consumerMember.DateTimeLastCommit < DateTime.Now.AddMilliseconds(-(int)consumerMember.ConsumerModel.FrequencyToCommitMs)))
+                        foreach (var consumerMember in _consumerMembers.Where(x => x.ConsumerModel.Active && !x.ConsumerModel.EnableAutoCommit))
                         {
-                            var topicPartitionOffsetList = new List<TopicPartitionOffset>(consumerMember.TopicPartitionOffsets_ToCommit);
-                            consumerMember.TopicPartitionOffsets_ToCommit.Clear();
+                            if (consumerMember.TopicPartitionOffsets_ToCommit.Count >= consumerMember.ConsumerModel.BatchOffsetsToCommit || (!consumerMember.TopicPartitionOffsets_ToCommit.IsEmpty && consumerMember.DateTimeLastCommit < DateTime.Now.AddMilliseconds(-(int)consumerMember.ConsumerModel.FrequencyToCommitMs)))
+                            {
+                                var topicPartitionOffsetList = new List<TopicPartitionOffset>(consumerMember.TopicPartitionOffsets_ToCommit);
+                                consumerMember.TopicPartitionOffsets_ToCommit.Clear();
 
-                            topicPartitionOffsetList = new List<TopicPartitionOffset>(topicPartitionOffsetList.GroupBy(t => t.TopicPartition, (key, tpo) => tpo.OrderByDescending(x => x.Offset.Value).First()).Select(tpo => new TopicPartitionOffset(tpo.TopicPartition, new Offset(tpo.Offset.Value + 1))).ToList());
-                            consumerMember.ConsumerInstance.Commit(topicPartitionOffsetList);
-                            consumerMember.DateTimeLastCommit = DateTime.Now;
+                                topicPartitionOffsetList = new List<TopicPartitionOffset>(topicPartitionOffsetList.GroupBy(t => t.TopicPartition, (key, tpo) => tpo.OrderByDescending(x => x.Offset.Value).First()).Select(tpo => new TopicPartitionOffset(tpo.TopicPartition, new Offset(tpo.Offset.Value + 1))).ToList());
+                                consumerMember.ConsumerInstance.Commit(topicPartitionOffsetList);
+                                consumerMember.DateTimeLastCommit = DateTime.Now;
+                            }
                         }
+                        await Task.Delay(millisecondsDelay: 100, cancellationToken).ConfigureAwait(false);
                     }
-                    await Task.Delay(millisecondsDelay: 100, cancellationToken).ConfigureAwait(false);
+                    catch (KafkaException ex)
+                    {
+                        if (ex.Message.Contains("Specified group generation id is not valid", StringComparison.OrdinalIgnoreCase))
+                            _logger.LogWarning(ex, "KafkaHelper | ConsumerCommitterService.CommitMessagesAsync | Last commit failed due to application shutting down.");
+                        else
+                            _logger.LogError(ex, "KafkaHelper | ConsumerCommitterService.CommitMessagesAsync");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "KafkaHelper | ConsumerCommitterService.CommitMessagesAsync");
+                    }
                 }
-                catch (TaskCanceledException) { }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "KafkaHelper | ConsumerCommitterService.CommitMessagesAsync");
-                }
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogWarning(ex, "KafkaHelper | ConsumerCommitterService.CommitMessagesAsync");
             }
         }
 
