@@ -198,6 +198,7 @@ namespace Creos.KafkaHelper.Consumer
                         }
                     }
                     catch (TaskCanceledException) { }
+                    catch (OperationCanceledException) { }
                     catch (KafkaException ex)
                     {
                         if (ex.Message == "Broker: Group rebalance in progress")
