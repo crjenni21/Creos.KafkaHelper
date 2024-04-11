@@ -73,8 +73,10 @@ namespace Creos.KafkaHelper.Consumer
             var actualTopicListToSubscribe = new List<string>();
             foreach (var topic in Topics)
             {
-                if (_helper.TopicList.Contains(topic))
+                if (_helper.TopicList.Contains(topic, StringComparer.OrdinalIgnoreCase))
                     actualTopicListToSubscribe.Add(topic);
+                else
+                    _logger.LogWarning("KafkaHelper | Consumer Name: {Name} will not consume from {topic} because this topic does not exist.", ConsumerModel.ConsumerName, topic);
             }
 
             if (actualTopicListToSubscribe.Count == 0)
