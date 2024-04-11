@@ -27,7 +27,7 @@ namespace Creos.KafkaHelper.HostedServices
         protected async override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Delay(15000, stoppingToken);
-            _consumerMembers = _consumerMembers.Where(x => x.ConsumerModel.Topics.Any(x => x.Contains('*')));
+            _consumerMembers = _consumerMembers.Where(x => x.ConsumerModel.Topics.Any(x => x.Contains('*')) || x.ConsumerModel.Topics.Any(x => x.Contains('+')));
 
             if (!_consumerMembers.Any())
             {

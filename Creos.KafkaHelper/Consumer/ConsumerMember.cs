@@ -22,7 +22,6 @@ namespace Creos.KafkaHelper.Consumer
     public class ConsumerMember : IConsumerMember, IDisposable
     {
         private readonly ILogger<ConsumerMember> _logger;
-        
         private readonly IKafkaHelperFunctions _helper;
         private readonly ConcurrentDictionary<Guid, PauseModel> pauseModels = new();
         internal readonly ConcurrentBag<TopicPartitionOffset> TopicPartitionOffsets_ToCommit;
@@ -40,11 +39,11 @@ namespace Creos.KafkaHelper.Consumer
 
         public ConsumerModel ConsumerModel { get; private set; }
         public event AsyncEventHandler<bool> ConsumeEvent;
-        
+
         public bool ConsumerIsActive { get; private set; } = false;
-    
+
         internal List<string> Topics { get; set; }
-        
+
         internal DateTime DateTimeLastCommit { get; set; }
 
         public async Task RegisterConsumerMemberAsync(CancellationToken cancellationToken)
@@ -71,6 +70,16 @@ namespace Creos.KafkaHelper.Consumer
 
             Topics = topics.Distinct().ToList();
 
+            var actualTopicListToSubscribe = new List<string>();
+            foreach (var topic in Topics)
+            {
+                if (_helper.TopicList.Contains(topic))
+                    actualTopicListToSubscribe.Add(topic);
+            }
+
+            if (actualTopicListToSubscribe.Count == 0)
+                return;
+
             if ((!string.IsNullOrWhiteSpace(ConsumerModel.ConsumeFromDate)) && DateTime.TryParse(ConsumerModel.ConsumeFromDate, out DateTime consumeFromDate))
             {
                 var consumeFromDateForTimestamp = new DateTime(year: consumeFromDate.Year, month: consumeFromDate.Month, day: consumeFromDate.Day, hour: consumeFromDate.Hour, minute: consumeFromDate.Minute, second: consumeFromDate.Second, DateTimeKind.Utc);
@@ -82,7 +91,7 @@ namespace Creos.KafkaHelper.Consumer
                 var topicPartitionTimestamps = new List<TopicPartitionTimestamp>();
                 var topicPartitionOffsets = new List<TopicPartitionOffset>();
 
-                foreach (var topic in topics)
+                foreach (var topic in actualTopicListToSubscribe)
                 {
                     topicPartitionTimestamps.Clear();
                     var metaData = adminClient.GetMetadata(topic, TimeSpan.FromSeconds(30));
@@ -142,8 +151,10 @@ namespace Creos.KafkaHelper.Consumer
                 }
             }
 
+
+
             ConsumerIsActive = true;
-            ConsumerInstance.Subscribe(Topics);
+            ConsumerInstance.Subscribe(actualTopicListToSubscribe);
 
             var task = Task.Run(async () =>
             {
@@ -315,7 +326,7 @@ namespace Creos.KafkaHelper.Consumer
                 pausedConsumer.ResumeTask = resumeTask;
                 pauseModels.TryAdd(pausedConsumer.ResumeGuid, pausedConsumer);
                 ConsumerInstance.Pause(pausedConsumer.TopicPartitions);
-            }   
+            }
         }
 
         private void ResumePausedConsumer(Guid resumeGuid)
