@@ -22,20 +22,35 @@ namespace Creos.KafkaHelper.HostedServices
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            var kafkaConfigModel = _configuration.GetSection("KafkaConfiguration").Get<KafkaConfigurationModel>();
-
-            if (kafkaConfigModel.Producers.Where(x => x.Active).Any())
+            
+            try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                var kafkaConfigModel = _configuration.GetSection("KafkaConfiguration").Get<KafkaConfigurationModel>();
+
+                if (kafkaConfigModel.Producers.Where(x => x.Active).Any())
                 {
-                    await Task.Delay(100, cancellationToken);
-                    if (_producerMessages.ProducerTasks.Where(x => !x.IsCompleted).Any())
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        await Task.WhenAll(_producerMessages.ProducerTasks).ConfigureAwait(false);
-                        _producerMessages.ProducerTasks.Clear();
-                        _logger.LogTrace("KafkaHelper | After Lingering, sent Messages to Kafka");
+                        try
+                        {
+                            await Task.Delay(100, cancellationToken);
+                            if (_producerMessages.ProducerTasks.Where(x => !x.IsCompleted).Any())
+                            {
+                                await Task.WhenAll(_producerMessages.ProducerTasks).ConfigureAwait(false);
+                                _producerMessages.ProducerTasks.Clear();
+                                _logger.LogTrace("KafkaHelper | After Lingering, sent Messages to Kafka");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "KafkaHelper | ProducerLoggerService ExecuteAsync");
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "KafkaHelper | ProducerLoggerService ExecuteAsync");
             }
         }
     }
