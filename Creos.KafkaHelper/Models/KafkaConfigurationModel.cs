@@ -36,6 +36,7 @@ namespace Creos.KafkaHelper.Models
         public Confluent.Kafka.Partitioner Partitioner { get; set; } = Confluent.Kafka.Partitioner.ConsistentRandom;
         public int LingerMS { get; set; } = 1000;  // 1 second
         public int BatchSizeBytes { get; set; } = 1000000; // 1 MB
+        public bool AllowAutoCreateTopics { get; set; } = true;
     }
 
     public sealed class ConsumerModel

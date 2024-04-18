@@ -33,7 +33,8 @@ namespace Creos.KafkaHelper.Producer
                 BootstrapServers = kafkaHelperFunctions.BuildBrokerList(producerModel),
                 Partitioner = producerModel.Partitioner,
                 LingerMs = producerModel.LingerMS,
-                BatchSize = producerModel.BatchSizeBytes
+                BatchSize = producerModel.BatchSizeBytes,
+                AllowAutoCreateTopics = producerModel.AllowAutoCreateTopics
             };
             _producer = new ProducerBuilder<string, string>(confluentProducerConfig).Build();
 
