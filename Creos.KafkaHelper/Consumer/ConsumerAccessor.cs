@@ -34,7 +34,7 @@ namespace Creos.KafkaHelper.Consumer
         public bool HasConsumerFailed()
         {
 
-            var consumerMembers = _serviceProvider.GetServices<IConsumerMember>().Where(x => x.ConsumerModel.Active);
+            var consumerMembers = _serviceProvider.GetServices<ConsumerMember>().Where(x => x.ConsumerModel.Active);
 
             if (consumerMembers != null && consumerMembers.Any(x => !x.ConsumerIsActive))
             {
