@@ -30,6 +30,7 @@ namespace Creos.KafkaHelper.Producer
 
             var confluentProducerConfig = new ProducerConfig
             {
+                Acks = Acks.Leader,
                 BootstrapServers = kafkaHelperFunctions.BuildBrokerList(producerModel),
                 Partitioner = producerModel.Partitioner,
                 LingerMs = producerModel.LingerMS,
