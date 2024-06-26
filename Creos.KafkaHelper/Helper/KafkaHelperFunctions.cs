@@ -158,6 +158,11 @@ namespace Creos.KafkaHelper.Helper
                 confluentConsumerConfig.AutoCommitIntervalMs = consumerModel.AutoCommitIntervalMs;
                 _logger.LogTrace("KafkaHelper | KafkaHelperFunctions | BuildConsumer | AutoCommitIntervalMs: {confluentConsumerConfig.AutoCommitIntervalMs}", confluentConsumerConfig.AutoCommitIntervalMs);
             }
+            if (consumerModel.QueuedMaxMessagesKbytes != null)
+            {
+                confluentConsumerConfig.QueuedMaxMessagesKbytes = consumerModel.QueuedMaxMessagesKbytes;
+                _logger.LogTrace("KafkaHelper | KafkaHelperFunctions | BuildConsumer | QueuedMaxMessagesKbytes: {confluentConsumerConfig.QueuedMaxMessagesKbytes}", confluentConsumerConfig.QueuedMaxMessagesKbytes);
+            }
 
             return new ConsumerBuilder<string, string>(confluentConsumerConfig)
                 .SetErrorHandler((consumer, error) =>

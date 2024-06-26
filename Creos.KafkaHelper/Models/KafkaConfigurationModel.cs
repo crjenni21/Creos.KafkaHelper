@@ -88,6 +88,7 @@ namespace Creos.KafkaHelper.Models
         internal int? ReconnectBackoffMaxMs { get; set; }
         internal int? FetchMaxBytes { get; set; }
         internal int? AutoCommitIntervalMs { get; set; }
+        internal int? QueuedMaxMessagesKbytes { get; set; }
 
     }
 

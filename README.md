@@ -71,6 +71,7 @@ Multiple consumers are processed concurrently.
  - ReconnectBackoffMaxMs:  (Optional)  Overrides default if explicitly set. 
  - FetchMaxBytes:  (Optional)  Overrides default if explicitly set. 
  - AutoCommitIntervalMs:  (Optional)  Overrides default if explicitly set. 
+ - QueuedMaxMessagesKbytes:  (Optional)  Overrides default if explicitly set.
 
 
 
