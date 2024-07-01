@@ -27,14 +27,17 @@ namespace Creos.KafkaHelper.Consumer
         internal readonly ConcurrentBag<TopicPartitionOffset> TopicPartitionOffsets_ToCommit;
         public IConsumer<string, string> ConsumerInstance { get; private set; }
 
-        internal ConsumerMember(IServiceProvider serviceProvider, ConsumerModel consumerModel)
+        public int InstanceNumber { get; private set; }
+
+        internal ConsumerMember(IServiceProvider serviceProvider, ConsumerModel consumerModel, int instanceNumber)
         {
             _logger = serviceProvider.GetRequiredService<ILogger<ConsumerMember>>();
             ConsumerModel = consumerModel;
             _helper = serviceProvider.GetRequiredService<IKafkaHelperFunctions>();
             TopicPartitionOffsets_ToCommit = new ConcurrentBag<TopicPartitionOffset>();
             ConsumerInstance = _helper.BuildConsumer(consumerModel);
-            _logger.LogTrace("Consumer Name: {ConsumerName} Instantiated.", ConsumerModel.ConsumerName);
+            _logger.LogTrace("Consumer Name: {ConsumerName} Instantiated. InstanceNumber: {InstanceNumber}", ConsumerModel.ConsumerName, instanceNumber);
+            InstanceNumber = instanceNumber;
         }
 
         public ConsumerModel ConsumerModel { get; private set; }
@@ -66,7 +69,7 @@ namespace Creos.KafkaHelper.Consumer
                 }
             }
 
-            _logger.LogDebug("KafkaHelper | Consumer Name: {Name}, Subscribing to {TopicList}", ConsumerModel.ConsumerName, string.Join(",", topics.Distinct()));
+            _logger.LogDebug("KafkaHelper | Consumer Name: {Name}, InstanceNumber: {InstanceNumber}, Subscribing to {TopicList}", ConsumerModel.ConsumerName, InstanceNumber, string.Join(",", topics.Distinct()));
 
             Topics = topics.Distinct().ToList();
 
@@ -190,7 +193,7 @@ namespace Creos.KafkaHelper.Consumer
                             {
                                 offset = consumeResult.Offset.Value;
 
-                                bool result = await ConsumeEvent(new ConsumeTriggerEventArgs(consumeResult)).ConfigureAwait(false);
+                                bool result = await ConsumeEvent(new ConsumeTriggerEventArgs(consumeResult, InstanceNumber)).ConfigureAwait(false);
                                 if (!result)
                                 {
                                     throw new Exception("KafkaHelper | Consumer Failed. RaiseConsumerTriggered returned false.");
@@ -216,18 +219,18 @@ namespace Creos.KafkaHelper.Consumer
                     {
                         if (ex.Message == "Broker: Group rebalance in progress")
                         {
-                            _logger.LogWarning(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                            _logger.LogWarning(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}, InstanceNumber: {InstanceNumber}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown", InstanceNumber);
                         }
                         else
                         {
-                            _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                            _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}, InstanceNumber: {InstanceNumber}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown", InstanceNumber);
                             ConsumerIsActive = false;
                             throw;
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown");
+                        _logger.LogError(ex, "KafkaHelper | Consumer: {GroupID},  Offset: {Offset}, Partition: {Partition}, Topic: {Topic}, InstanceNumber: {InstanceNumber}", ConsumerModel.GroupID, consumeResult?.TopicPartitionOffset?.Offset ?? -1, consumeResult?.Partition ?? -1, consumeResult?.Topic ?? "unknown", InstanceNumber);
                         ConsumerIsActive = false;
                         throw;
                     }

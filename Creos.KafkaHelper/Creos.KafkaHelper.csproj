@@ -35,12 +35,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-    	<PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+    	<PackageReference Include="Confluent.Kafka" Version="2.4.0" />
     </ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\README.md" Pack="true" PackagePath=""/>
-		<None Include="..\LICENSE" Pack="true" PackagePath=""/>
+		<None Include="..\README.md" Pack="true" PackagePath="" />
+		<None Include="..\LICENSE" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 </Project>

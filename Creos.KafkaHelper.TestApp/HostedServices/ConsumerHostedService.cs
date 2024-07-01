@@ -9,36 +9,43 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
     public class ConsumerHostedService : ConsumerBackgroundService
     {
         private readonly ILogger<ConsumerHostedService> _logger;
-        private readonly IConsumerMember _consumerMember;
+        private readonly IEnumerable<ConsumerMember> _consumerMembers;
         private CancellationToken _token;
 
         public ConsumerHostedService(ILogger<ConsumerHostedService> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
-            _consumerMember = serviceProvider.GetServices<IConsumerMember>().Where(x => x.ConsumerModel.Active && x.ConsumerModel.ConsumerName == "TestConsumer").FirstOrDefault();
+            _consumerMembers = serviceProvider.GetServices<ConsumerMember>().Where(x => x.ConsumerModel.Active && x.ConsumerModel.ConsumerName == "TestConsumer1");
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _token = cancellationToken;
-            if (_consumerMember != null)
+            if (_consumerMembers != null && _consumerMembers.Count() > 0)
             {
-                await _consumerMember.RegisterConsumerMemberAsync(cancellationToken);
-                _consumerMember.ConsumeEvent += ProcessConsumedMessageAsync;
+                foreach (var consumerMember in _consumerMembers) 
+                {
+                    await consumerMember.RegisterConsumerMemberAsync(cancellationToken);
+                    consumerMember.ConsumeEvent += ProcessConsumedMessageAsync;
+                }
             }
         }
 
         protected override async Task<bool> ProcessConsumedMessageAsync(ConsumeTriggerEventArgs consumeTriggerEvent)
         {
             var consumeResult = consumeTriggerEvent.ConsumeResult;
-            _logger.LogDebug("Topic: {Topic}, offset: {Offset}, TopicPartitionOffset: {TopicPartitionOffset}", consumeResult.Topic, consumeResult.Offset, consumeResult.TopicPartitionOffset);
-            var x = await ProcessConsumedMessage_private(consumeResult, _token);
+            var i = consumeTriggerEvent.InstanceNumber;
+            _logger.LogDebug("Topic: {Topic}, offset: {Offset}, Partition: {Partition}, InstanceNumber: {InstanceNumber}", consumeResult.Topic, consumeResult.Offset, consumeResult.Partition.Value, i);
+            var x = await ProcessConsumedMessage_private(consumeResult, consumeResult.Partition.Value, _token);
             return x;
         }
 
-        private async Task<bool> ProcessConsumedMessage_private(ConsumeResult<string, string> ConsumeResult, CancellationToken cancellationToken)
+        private async Task<bool> ProcessConsumedMessage_private(ConsumeResult<string, string> ConsumeResult, int partition, CancellationToken cancellationToken)
         {
-            await Task.Delay(500);
+            if (partition % 2 == 0)
+                await Task.Delay(1000, cancellationToken);
+            else
+                await Task.Delay(8000, cancellationToken);
             return true;
         }
     }

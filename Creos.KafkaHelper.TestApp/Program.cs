@@ -25,8 +25,8 @@ namespace Creos.KafkaHelper.TestApp
 
             builder.Services.AddKafkaHelper(builder.Configuration);
             builder.Services.AddHostedService<ConsumerHostedService>();
-            builder.Services.AddHostedService<ConsumerHostedService2>();
-            builder.Services.AddHostedService<ProducerExampleService>();
+            //builder.Services.AddHostedService<ConsumerHostedService2>();
+            //builder.Services.AddHostedService<ProducerExampleService>();
             builder.Services.AddControllers();
 
 

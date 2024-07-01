@@ -57,7 +57,8 @@ namespace Creos.KafkaHelper.Consumer
                     {
                         IsActive = consumerMember.ConsumerIsActive,
                         DateTimeLastCommit = consumerMember.DateTimeLastCommit,
-                        ConsumerModel = consumerMember.ConsumerModel
+                        ConsumerModel = consumerMember.ConsumerModel,
+                        InstanceNumber = consumerMember.InstanceNumber,
                     };
 
                     consumerAccessors.Add(obj);

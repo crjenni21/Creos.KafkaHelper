@@ -38,4 +38,11 @@ namespace Creos.KafkaHelper.Exceptions
         public KafkaTopicNameNotAllowedException(string s) : base(s) { }
     }
 
+    [Serializable]
+    internal class KafkaConsumerInvalidConfiguration : ConfigurationErrorsException
+    {
+        public KafkaConsumerInvalidConfiguration() { }
+        public KafkaConsumerInvalidConfiguration(string s) : base(s) { }
+    }
+
 }

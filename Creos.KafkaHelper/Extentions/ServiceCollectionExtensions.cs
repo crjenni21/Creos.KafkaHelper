@@ -51,10 +51,14 @@ namespace Creos.KafkaHelper.Extentions
             {
                 foreach (var consumerModel in kafkaConfigModel.Consumers?.Where(x => x.Active))
                 {
-                    services.AddSingleton(serviceProvider =>
+                    for (int i = 0; i < consumerModel.ConsumersToStart; i++)
                     {
-                        return new ConsumerMember(serviceProvider, consumerModel);
-                    });
+                        int instanceNumber = i;
+                        services.AddSingleton(serviceProvider =>
+                        {
+                            return new ConsumerMember(serviceProvider, consumerModel, instanceNumber);
+                        });
+                    }
                 }
             }
             return services;
@@ -84,6 +88,11 @@ namespace Creos.KafkaHelper.Extentions
             {
                 // no active producers or consumers, so don't do any work.
                 return false;
+            }
+
+            if (kafkaConfigurationModel.Consumers?.Exists(x => x.Active && x.ConsumersToStart == 0) ?? false)
+            {
+                throw new KafkaConsumerInvalidConfiguration("KafkaHelper | Consumer intent is not clear.  Consumer marked as active with 0 ConsumersToStart");
             }
 
             if (kafkaConfigurationModel.Producers?.Where(x => x.Active && string.IsNullOrWhiteSpace(x.ProducerName)).Any() ?? false)

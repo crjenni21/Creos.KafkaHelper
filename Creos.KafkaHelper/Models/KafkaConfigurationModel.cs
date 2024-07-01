@@ -89,7 +89,7 @@ namespace Creos.KafkaHelper.Models
         internal int? FetchMaxBytes { get; set; }
         internal int? AutoCommitIntervalMs { get; set; }
         internal int? QueuedMaxMessagesKbytes { get; set; }
-
+        internal int? ConsumersToStart { get; set; } = 1;
     }
 
     public sealed class ConsumerAccessorModel
@@ -97,5 +97,6 @@ namespace Creos.KafkaHelper.Models
         public bool IsActive { get; internal set; }
         public DateTime DateTimeLastCommit { get; internal set; }
         public ConsumerModel ConsumerModel { get; internal set; }
+        public int InstanceNumber { get; internal set; }
     }
 }
