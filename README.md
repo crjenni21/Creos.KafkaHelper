@@ -3,6 +3,7 @@
 ## Supported Frameworks:
  - .NET 6
  - .NET 8
+ - .NET 10
 
 ## Overall 
 
