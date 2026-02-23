@@ -11,6 +11,6 @@ namespace Creos.KafkaHelper.Consumer
 {
     public abstract class ConsumerBackgroundService : BackgroundService
     {
-        protected abstract Task<bool> ProcessConsumedMessageAsync(ConsumeTriggerEventArgs consumeTriggerEvent);
+        protected abstract Task<bool> ProcessConsumedMessageAsync(object sender, ConsumeTriggerEventArgs consumeTriggerEvent);
     }
 }

@@ -10,7 +10,6 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
     {
         private readonly ILogger<ConsumerHostedService> _logger;
         private readonly IEnumerable<ConsumerMember> _consumerMembers;
-        private CancellationToken _token;
 
         public ConsumerHostedService(ILogger<ConsumerHostedService> logger, IServiceProvider serviceProvider)
         {
@@ -20,7 +19,6 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _token = cancellationToken;
             if (_consumerMembers != null && _consumerMembers.Count() > 0)
             {
                 foreach (var consumerMember in _consumerMembers) 
@@ -31,21 +29,21 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
             }
         }
 
-        protected override async Task<bool> ProcessConsumedMessageAsync(ConsumeTriggerEventArgs consumeTriggerEvent)
+        protected override async Task<bool> ProcessConsumedMessageAsync(object sender, ConsumeTriggerEventArgs consumeTriggerEvent)
         {
             var consumeResult = consumeTriggerEvent.ConsumeResult;
             var i = consumeTriggerEvent.InstanceNumber;
             _logger.LogDebug("Topic: {Topic}, offset: {Offset}, Partition: {Partition}, InstanceNumber: {InstanceNumber}", consumeResult.Topic, consumeResult.Offset, consumeResult.Partition.Value, i);
-            var x = await ProcessConsumedMessage_private(consumeResult, consumeResult.Partition.Value, _token);
+            var x = await ProcessConsumedMessage_private(consumeResult, consumeResult.Partition.Value, consumeTriggerEvent.CancellationToken);
             return x;
         }
 
         private async Task<bool> ProcessConsumedMessage_private(ConsumeResult<string, string> ConsumeResult, int partition, CancellationToken cancellationToken)
         {
             if (partition % 2 == 0)
-                await Task.Delay(1000, cancellationToken);
+                await Task.Delay(100, cancellationToken);
             else
-                await Task.Delay(8000, cancellationToken);
+                await Task.Delay(2000, cancellationToken);
             return true;
         }
     }

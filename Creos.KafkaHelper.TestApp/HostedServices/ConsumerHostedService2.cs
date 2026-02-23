@@ -25,16 +25,16 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
             }
         }
 
-        protected override async Task<bool> ProcessConsumedMessageAsync(ConsumeTriggerEventArgs consumeTriggerEvent)
+        protected override async Task<bool> ProcessConsumedMessageAsync(object sender, ConsumeTriggerEventArgs consumeTriggerEvent)
         {
             var consumeResult = consumeTriggerEvent.ConsumeResult;
             _logger.LogDebug("ServiceDependencyHealth | Topic: {Topic}, offset: {Offset}, TopicPartitionOffset: {Offset}", consumeResult.Topic, consumeResult.Offset, consumeResult.TopicPartitionOffset.Offset);
-            return await ProcessConsumedMessage_private(consumeResult);
+            return await ProcessConsumedMessage_private(consumeResult, consumeTriggerEvent.CancellationToken);
         }
 
-        private async Task<bool> ProcessConsumedMessage_private(ConsumeResult<string, string> ConsumeResult)
+        private async Task<bool> ProcessConsumedMessage_private(ConsumeResult<string, string> ConsumeResult, CancellationToken cancellationToken)
         {
-            await Task.Delay(10000);
+            await Task.Delay(10000, cancellationToken);
             return true;
         }
     }

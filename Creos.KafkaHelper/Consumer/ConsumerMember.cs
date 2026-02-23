@@ -16,7 +16,7 @@ namespace Creos.KafkaHelper.Consumer
         bool ConsumerIsActive { get; }
         ConsumerModel ConsumerModel { get; }
 
-        event AsyncEventHandler<bool> ConsumeEvent;
+        event ConsumeEventHandler ConsumeEvent;
     }
 
     public class ConsumerMember : IConsumerMember, IDisposable
@@ -41,7 +41,7 @@ namespace Creos.KafkaHelper.Consumer
         }
 
         public ConsumerModel ConsumerModel { get; private set; }
-        public event AsyncEventHandler<bool> ConsumeEvent;
+        public event ConsumeEventHandler ConsumeEvent;
 
         public bool ConsumerIsActive { get; private set; } = false;
 
@@ -51,18 +51,22 @@ namespace Creos.KafkaHelper.Consumer
 
         public async Task RegisterConsumerMemberAsync(CancellationToken cancellationToken)
         {
-            var topics = new List<string>();
+            //var topics = new List<string>();
+            var topics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var topic in ConsumerModel.Topics.Select(s => s.Trim()))
+            foreach (var raw in ConsumerModel.Topics)
             {
-                if (string.IsNullOrWhiteSpace(topic))
-                    continue;
+                var topic = raw?.Trim();
+                if (string.IsNullOrWhiteSpace(topic)) continue;
 
                 if (!topics.Contains(topic))
                 {
                     if (topic.Contains('*') || topic.Contains('+'))
                     {
-                        topics.AddRange(await _helper.GetTopicsFromWildcardAsync(topic).ConfigureAwait(false));
+                        foreach (var t in await _helper.GetTopicsFromWildcardAsync(topic).ConfigureAwait(false))
+                        {
+                            topics.Add(t);
+                        }
                     }
                     else
                         topics.Add(topic);
@@ -176,27 +180,25 @@ namespace Creos.KafkaHelper.Consumer
 
         }
 
-        public async Task ExecuteConsumingAsync(CancellationToken cancellationToken)
+        public async Task ExecuteConsumingAsync(CancellationToken ct)
         {
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (true)
                 {
-                    long offset = 0;
+                    ct.ThrowIfCancellationRequested();
                     ConsumeResult<string, string> consumeResult = null;
                     try
                     {
-                        consumeResult = ConsumerInstance.Consume(cancellationToken);
+                        consumeResult = ConsumerInstance.Consume(ct);
                         if (!consumeResult.IsPartitionEOF)
                         {
                             if (!string.IsNullOrWhiteSpace(consumeResult?.Message?.Value)) // A null value could be a "tombstone record" and may should be handled differently. 
                             {
-                                offset = consumeResult.Offset.Value;
-
-                                bool result = await ConsumeEvent(new ConsumeTriggerEventArgs(consumeResult, InstanceNumber)).ConfigureAwait(false);
-                                if (!result)
+                                bool ok = await RaiseConsumeEventAsync(consumeResult, ct).ConfigureAwait(false);
+                                if (!ok)
                                 {
-                                    throw new Exception("KafkaHelper | Consumer Failed. RaiseConsumerTriggered returned false.");
+                                    throw new Exception("KafkaHelper | Consumer Failed. RaiseConsumeEventAsync returned false.");
                                 }
                             }
                             if (!ConsumerModel.EnableAutoCommit)
@@ -213,8 +215,6 @@ namespace Creos.KafkaHelper.Consumer
                             }
                         }
                     }
-                    catch (TaskCanceledException) { }
-                    catch (OperationCanceledException) { }
                     catch (KafkaException ex)
                     {
                         if (ex.Message == "Broker: Group rebalance in progress")
@@ -236,11 +236,29 @@ namespace Creos.KafkaHelper.Consumer
                     }
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
             {
                 _logger.LogWarning(ex, "");
             }
 
+        }
+
+        private async Task<bool> RaiseConsumeEventAsync(ConsumeResult<string, string> cr, CancellationToken ct)
+        {
+            var handler = ConsumeEvent;
+            if (handler is null) return true;
+
+            var args = new ConsumeTriggerEventArgs(cr, InstanceNumber, ct);
+
+            foreach (ConsumeEventHandler h in handler.GetInvocationList())
+            {
+                ct.ThrowIfCancellationRequested();
+
+                bool ok = await h(this, args).ConfigureAwait(false);
+                if (!ok) return false;
+            }
+
+            return true;
         }
 
         #region Pause_Functionality
@@ -357,8 +375,9 @@ namespace Creos.KafkaHelper.Consumer
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
-                if (ConsumerInstance != null)
+                if (ConsumerInstance is not null)
                 {
+                    try { ConsumerInstance.Close(); } catch { }
                     ConsumerInstance.Dispose();
                     ConsumerInstance = null;
                 }
