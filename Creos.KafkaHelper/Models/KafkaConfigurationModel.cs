@@ -11,11 +11,6 @@ namespace Creos.KafkaHelper.Models
         public int WildCardRestartTimer_Minutes { get; set; } = 30;
     }
 
-    internal class ProducerMessages
-    {
-        internal ConcurrentBag<Task> ProducerTasks = new();
-    }
-
     internal class ProducerModel
     {
         private string _producerName = string.Empty;
@@ -34,9 +29,18 @@ namespace Creos.KafkaHelper.Models
         public string Topic { get; set; }
         public bool Active { get; set; } = true;
         public Confluent.Kafka.Partitioner Partitioner { get; set; } = Confluent.Kafka.Partitioner.ConsistentRandom;
-        public int LingerMS { get; set; } = 1000;  // 1 second
+        public int LingerMS { get; set; } = -1;
         public int BatchSizeBytes { get; set; } = 1000000; // 1 MB
         public bool AllowAutoCreateTopics { get; set; } = true;
+
+
+        public int MessageTimeoutMs { get; set; } = -1;
+        public int MessageSendMaxRetries { get; set; } = -1;
+        public int RequestTimeoutMs { get; set; } = -1;
+        public int SocketTimeoutMs { get; set; } = -1;
+        public int SocketConnectionSetupTimeoutMs { get; set; } = -1;
+        public int RetryBackoffMaxMs { get; set; } = -1;
+        public int ReconnectBackoffMaxMs { get; set; } = -1;
     }
 
     public sealed class ConsumerModel

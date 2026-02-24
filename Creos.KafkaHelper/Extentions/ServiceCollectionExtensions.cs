@@ -23,20 +23,13 @@ namespace Creos.KafkaHelper.Extentions
 
             if (ValidateKafkaConfigurationModel(kafkaConfigModel))
             {
-                services.AddSingleton(new ProducerMessages());
-
                 services.AddSingleton<IKafkaHelperFunctions, KafkaHelperFunctions>();
-                
 
                 services.AddKafkaScopedConsumers(kafkaConfigModel);
                 services.AddKafkaScopedProducers(kafkaConfigModel);
                 if (kafkaConfigModel.Consumers.Where(x => !x.EnableAutoCommit).Any())
                 {
                     services.AddHostedService<ComsumerCommitterService>();
-                }
-                if (kafkaConfigModel.Producers.Where(x => x.Active).Any())
-                {
-                    services.AddHostedService<ProducerLoggerService>();
                 }
 
                 services.AddHostedService<WildcardConsumerService>();

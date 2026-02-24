@@ -10,7 +10,7 @@ namespace Creos.KafkaHelper.Producer
     internal interface IScopedProducer
     {
         void ProduceMessage(string TopicName, Message<string, string> message);
-        Task ProduceMessageAsync(string TopicName, Message<string, string> message);
+        Task ProduceMessageAsync(string topicName, Message<string, string> message);
         string ProducerName { get; set; }
         string TopicName { get; set; }
         ProducerModel ProducerModel { get; set; }
@@ -19,12 +19,10 @@ namespace Creos.KafkaHelper.Producer
     {
         private readonly IProducer<string, string> _producer;
         private readonly ILogger<ScopedProducer> _logger;
-        private readonly ProducerMessages _producerMessages;
 
         public ScopedProducer(IServiceProvider serviceProvider, ProducerModel producerModel)
         {
             _logger = serviceProvider.GetRequiredService<ILogger<ScopedProducer>>();
-            _producerMessages = serviceProvider.GetRequiredService<ProducerMessages>();
 
             var kafkaHelperFunctions = serviceProvider.GetRequiredService<IKafkaHelperFunctions>();
 
@@ -33,11 +31,54 @@ namespace Creos.KafkaHelper.Producer
                 Acks = Acks.Leader,
                 BootstrapServers = kafkaHelperFunctions.BuildBrokerList(producerModel),
                 Partitioner = producerModel.Partitioner,
-                LingerMs = producerModel.LingerMS,
                 BatchSize = producerModel.BatchSizeBytes,
                 AllowAutoCreateTopics = producerModel.AllowAutoCreateTopics
             };
-            _producer = new ProducerBuilder<string, string>(confluentProducerConfig).Build();
+
+            if (producerModel.LingerMS > 0)
+            {
+                confluentProducerConfig.LingerMs = producerModel.LingerMS;
+            }
+            if (producerModel.MessageTimeoutMs > 0)
+            {
+                confluentProducerConfig.MessageTimeoutMs = producerModel.MessageTimeoutMs;
+            }
+            if (producerModel.MessageSendMaxRetries > 0)
+            {
+                confluentProducerConfig.MessageSendMaxRetries = producerModel.MessageSendMaxRetries;
+            }
+            if (producerModel.RequestTimeoutMs > 0)
+            {
+                confluentProducerConfig.RequestTimeoutMs = producerModel.RequestTimeoutMs;
+            }
+            if (producerModel.SocketTimeoutMs > 0)
+            {
+                confluentProducerConfig.SocketTimeoutMs = producerModel.SocketTimeoutMs;
+            }
+            if (producerModel.SocketConnectionSetupTimeoutMs > 0)
+            {
+                confluentProducerConfig.SocketConnectionSetupTimeoutMs = producerModel.SocketConnectionSetupTimeoutMs;
+            }
+            if (producerModel.RetryBackoffMaxMs > 0)
+            {
+                confluentProducerConfig.RetryBackoffMaxMs = producerModel.RetryBackoffMaxMs;
+            }
+            if (producerModel.ReconnectBackoffMaxMs > 0)
+            {
+                confluentProducerConfig.ReconnectBackoffMaxMs = producerModel.ReconnectBackoffMaxMs;
+            }
+
+            _producer = new ProducerBuilder<string, string>(confluentProducerConfig)
+                .SetErrorHandler((producer, error) =>
+                {
+                    var level = error.IsFatal ? LogLevel.Critical : LogLevel.Warning;
+                    _logger.Log(level, "KafkaHelper | ScopedProducer | Error: {Error}, Reason: {Reason}, IsFatal: {IsFatal}", error.Code, error.Reason, error.IsFatal);
+                })
+                .SetLogHandler((producer, logMessage) =>
+                {
+                    _logger.LogTrace("KafkaHelper | ScopedProducer | Log: {LogMessage}", logMessage.Message);
+                })
+                .Build();
 
             ProducerModel = producerModel;
             ProducerName = producerModel.ProducerName;
@@ -50,13 +91,32 @@ namespace Creos.KafkaHelper.Producer
 
         public void ProduceMessage(string TopicName, Message<string, string> message)
         {
-            _producer.Produce(TopicName, message);
+            _producer.Produce(TopicName, message, report =>
+            {
+                if (report.Error.IsError)
+                {
+                    _logger.LogError("KafkaHelper | ScopedProducer | ProduceMessage | Error producing message to topic {TopicName}: {Error}, Reason: {Reason}, IsFatal: {IsFatal}", TopicName, report.Error.Code, report.Error.Reason, report.Error.IsFatal);
+                }
+                else
+                {
+                    _logger.LogInformation("KafkaHelper | ScopedProducer | ProduceMessage | Successfully produced message to topic {TopicName} at offset {Offset}", TopicName, report.Offset);
+                }
+            });
         }
 
-        public async Task ProduceMessageAsync(string TopicName, Message<string, string> message)
+        public async Task ProduceMessageAsync(string topicName, Message<string, string> message)
         {
-            await Task.Yield();
-            _producerMessages.ProducerTasks.Add(_producer.ProduceAsync(TopicName, message));
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var result = await _producer.ProduceAsync(topicName, message).WaitAsync(cts.Token);
+                _logger.LogTrace("KafkaHelper | ScopedProducer | ProduceMessage | Successfully produced message to topic {TopicName} to TPO {TPO}", result.Topic, result.TopicPartitionOffset);
+            }
+            catch (ProduceException<string, string> ex)
+            {
+                _logger.LogError(ex, "Kafka delivery failed for topic {Topic}. Reason: {Reason}", topicName, ex.Error.Reason);
+                throw;
+            }
         }
     }
 }
