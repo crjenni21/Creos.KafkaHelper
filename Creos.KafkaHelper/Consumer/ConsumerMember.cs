@@ -81,7 +81,10 @@ namespace Creos.KafkaHelper.Consumer
             foreach (var topic in Topics)
             {
                 if (_helper.TopicList.Contains(topic, StringComparer.OrdinalIgnoreCase))
-                    actualTopicListToSubscribe.Add(topic);
+                {
+                    var casedTopicName = _helper.TopicList.First(t => t.Equals(topic, StringComparison.OrdinalIgnoreCase));
+                    actualTopicListToSubscribe.Add(casedTopicName);
+                }
                 else
                     _logger.LogWarning("KafkaHelper | Consumer Name: {Name} will not consume from {topic} because this topic does not exist.", ConsumerModel.ConsumerName, topic);
             }
