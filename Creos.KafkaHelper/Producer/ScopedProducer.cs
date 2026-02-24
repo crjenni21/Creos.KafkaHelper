@@ -10,7 +10,7 @@ namespace Creos.KafkaHelper.Producer
     internal interface IScopedProducer
     {
         void ProduceMessage(string TopicName, Message<string, string> message);
-        Task ProduceMessageAsync(string topicName, Message<string, string> message);
+        Task ProduceMessageAsync(string topicName, Message<string, string> message, CancellationToken cancellationToken);
         string ProducerName { get; set; }
         string TopicName { get; set; }
         ProducerModel ProducerModel { get; set; }
@@ -104,13 +104,25 @@ namespace Creos.KafkaHelper.Producer
             });
         }
 
-        public async Task ProduceMessageAsync(string topicName, Message<string, string> message)
+        public async Task ProduceMessageAsync(string topicName, Message<string, string> message, CancellationToken cancellationToken)
         {
+            var timeSpan = TimeSpan.FromSeconds(3);
+            using var timeoutCts = new CancellationTokenSource(timeSpan);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var result = await _producer.ProduceAsync(topicName, message).WaitAsync(cts.Token);
+                var result = await _producer.ProduceAsync(topicName, message, linkedCts.Token).WaitAsync(linkedCts.Token);
                 _logger.LogTrace("KafkaHelper | ScopedProducer | ProduceMessage | Successfully produced message to topic {TopicName} to TPO {TPO}", result.Topic, result.TopicPartitionOffset);
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+            {
+                _logger.LogError("Kafka produce timed out after {TimeOut} seconds for topic {Topic}", timeSpan.Seconds, topicName);
+                throw new TimeoutException($"Kafka produce timed out after 3 seconds for topic {topicName}");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Kafka produce canceled by caller for topic {Topic}", topicName);
+                throw;
             }
             catch (ProduceException<string, string> ex)
             {

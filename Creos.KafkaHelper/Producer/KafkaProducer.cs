@@ -16,7 +16,7 @@ namespace Creos.KafkaHelper.Producer
         /// <param name="message"></param>
         /// <returns></returns>
         /// <exception cref="KafkaProducerNameNotFoundException"></exception>
-        Task ProduceMessageToKafkaAsync(string producerName, string topic, Message<string, string> message);
+        Task ProduceMessageToKafkaAsync(string producerName, string topic, Message<string, string> message, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Synchronusly produce a message to a defined topic.  Configuration for this produced message will respect the settings of the passed in producerName.  However, the topic defined in the configuration is ignored.
@@ -27,7 +27,7 @@ namespace Creos.KafkaHelper.Producer
         /// <returns></returns>
         /// <exception cref="KafkaProducerNameNotFoundException"></exception>
         void ProduceMessageToKafka(string producerName, string topic, Message<string, string> message);
-        
+
         /// <summary>
         /// Asynchronusly produce a message to a specific topic.  Configuration for this produced message will respect the settings of the passed in producerName.  The topic produced to is defined in the configuration.
         /// </summary>
@@ -35,7 +35,7 @@ namespace Creos.KafkaHelper.Producer
         /// <param name="message"></param>
         /// <returns></returns>
         /// <exception cref="KafkaProducerNameNotFoundException"></exception>
-        Task ProduceMessageToKafkaAsync(string producerName, Message<string, string> message);
+        Task ProduceMessageToKafkaAsync(string producerName, Message<string, string> message, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Synchronusly produce a message to a specific topic.  Configuration for this produced message will respect the settings of the passed in producerName.  The topic produced to is defined in the configuration.
@@ -70,7 +70,7 @@ namespace Creos.KafkaHelper.Producer
         }
 
        
-        public async Task ProduceMessageToKafkaAsync(string producerName, string topic, Message<string, string> message)
+        public async Task ProduceMessageToKafkaAsync(string producerName, string topic, Message<string, string> message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -82,7 +82,7 @@ namespace Creos.KafkaHelper.Producer
                     if (scopedProducer.ProducerModel.Active)
                     {
                         _logger.LogTrace("KafkaHelper | KafkaProduer.ProduceMessageToKafkaAsync Topic: {Topic}, Key: {Key}", topic, message.Key);
-                        await scopedProducer.ProduceMessageAsync(topic, message).ConfigureAwait(false);
+                        await scopedProducer.ProduceMessageAsync(topic, message, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -135,7 +135,7 @@ namespace Creos.KafkaHelper.Producer
         }
 
         
-        public async Task ProduceMessageToKafkaAsync(string producerName, Message<string, string> message)
+        public async Task ProduceMessageToKafkaAsync(string producerName, Message<string, string> message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -146,7 +146,7 @@ namespace Creos.KafkaHelper.Producer
                     {
                         Validate(scopedProducer.TopicName);
                         _logger.LogTrace("KafkaHelper | KafkaProduer.ProduceMessageToKafkaAsync Topic: {Topic}, Key: {Key}", scopedProducer.TopicName, message.Key);
-                        await scopedProducer.ProduceMessageAsync(scopedProducer.TopicName, message).ConfigureAwait(false);
+                        await scopedProducer.ProduceMessageAsync(scopedProducer.TopicName, message, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
