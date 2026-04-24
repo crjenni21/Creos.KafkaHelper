@@ -14,6 +14,7 @@ namespace Creos.KafkaHelper.Producer
         string ProducerName { get; set; }
         string TopicName { get; set; }
         ProducerModel ProducerModel { get; set; }
+        void FlushProducer(CancellationToken cancellationToken);
     }
     internal class ScopedProducer : IScopedProducer
     {
@@ -99,9 +100,14 @@ namespace Creos.KafkaHelper.Producer
                 }
                 else
                 {
-                    _logger.LogInformation("KafkaHelper | ScopedProducer | ProduceMessage | Successfully produced message to topic {TopicName} at offset {Offset}", TopicName, report.Offset);
+                    _logger.LogTrace("KafkaHelper | ScopedProducer | ProduceMessage | Successfully produced message to topic {TopicName} at offset {Offset}", TopicName, report.Offset);
                 }
             });
+        }
+
+        public void FlushProducer(CancellationToken cancellationToken)
+        {
+            _producer.Flush(cancellationToken);
         }
 
         public async Task ProduceMessageAsync(string topicName, Message<string, string> message, CancellationToken cancellationToken)

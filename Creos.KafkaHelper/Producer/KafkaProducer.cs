@@ -45,6 +45,15 @@ namespace Creos.KafkaHelper.Producer
         /// <returns></returns>
         /// <exception cref="KafkaProducerNameNotFoundException"></exception>
         void ProduceMessageToKafka(string producerName, Message<string, string> message);
+
+        /// <summary>
+        /// Synchronusly flushes a specific producer.  If any messages are in the queue, they will be delivered immiately.
+        /// </summary>
+        /// <param name="producerName"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        /// <exception cref="KafkaProducerNameNotFoundException"></exception>
+        public void FlushProducer(string producerName, CancellationToken cancellationToken);
     }
 
     public sealed class KafkaProducer : IKafkaProducer
@@ -198,6 +207,35 @@ namespace Creos.KafkaHelper.Producer
             catch (Exception ex)
             {
                 _logger.LogError(ex, "KafkaHelper | KafkaProduer.ProduceMessageToKafka ProducerName: {ProducerName}, Key: {Key}", producerName, message.Key);
+                throw;
+            }
+        }
+
+        public void FlushProducer(string producerName, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var scopedProducer = _scopedProducers.Where(x => string.Equals(x.ProducerName.Trim(), producerName.Trim(), StringComparison.OrdinalIgnoreCase))?.FirstOrDefault();
+                if (scopedProducer != null)
+                {
+                    if (scopedProducer.ProducerModel.Active)
+                    {
+                        _logger.LogTrace("KafkaHelper | KafkaProduer.FlushProducer ProdcuerName: {ProdcuerName}", producerName);
+                        scopedProducer.FlushProducer(cancellationToken);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("KafkaHelper | KafkaProducer.FlushProducer ProdcuerName: {ProdcuerName} is not active.  Not flushed.", producerName);
+                    }
+                }
+                else
+                {
+                    throw new KafkaProducerNameNotFoundException($"KafkaHelper | KafkaProduer.FlushProducer ProducerName {producerName} not found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "KafkaHelper | KafkaProduer.FlushProducer ProducerName: {ProducerName}", producerName);
                 throw;
             }
         }
