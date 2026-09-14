@@ -52,6 +52,8 @@ Multiple consumers are processed concurrently.
  - Partitioner:  (Optional) Possible settings are defined within the Confluent.Kafka.Partitioner enum:  Default: ConsistentRandom
  - LingerMS:  (Optional) Producer Linger defined in milliseconds.   Default: 1000
  - BatchSizeBytes:  (Optional)  Producer BatchSize in bytes.  Default: 1000000
+- MessageMaxBytes: (Optional) Maximum producer request size in bytes, for example 8388608 (8 MiB). Omit to retain the Confluent default. Coordinate with the broker/topic batch limit and allow for overhead.
+- CompressionType: (Optional) Confluent producer codec: None, Gzip, Snappy, Lz4, or Zstd. Omit to retain the Confluent default. Example: "CompressionType": "Lz4".
 
 ### Consumer Properties
 

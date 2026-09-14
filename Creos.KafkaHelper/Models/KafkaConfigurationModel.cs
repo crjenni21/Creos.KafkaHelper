@@ -32,6 +32,9 @@ namespace Creos.KafkaHelper.Models
         public int LingerMS { get; set; } = -1;
         public int BatchSizeBytes { get; set; } = 1000000; // 1 MB
         public bool AllowAutoCreateTopics { get; set; } = true;
+        // Null preserves the Confluent client default for existing applications.
+        public int? MessageMaxBytes { get; set; }
+        public Confluent.Kafka.CompressionType? CompressionType { get; set; }
 
 
         public int MessageTimeoutMs { get; set; } = -1;

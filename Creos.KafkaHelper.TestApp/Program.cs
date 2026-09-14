@@ -24,18 +24,19 @@ namespace Creos.KafkaHelper.TestApp
                 .CreateLogger();
 
             builder.Services.AddKafkaHelper(builder.Configuration);
-            builder.Services.AddHostedService<ConsumerHostedService>();
+            //builder.Services.AddHostedService<ConsumerHostedService>();
             //builder.Services.AddHostedService<ConsumerHostedService2>();
-            //builder.Services.AddHostedService<ProducerExampleService>();
+            builder.Services.AddHostedService<ProducerExampleService>();
             builder.Services.AddControllers();
 
 
             var app = builder.Build();
             app.UseRouting();
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.MapControllers();
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapControllers();
+            //});
             app.UseSerilogRequestLogging();
             app.Run();
 

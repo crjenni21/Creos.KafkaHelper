@@ -27,7 +27,7 @@ namespace Creos.KafkaHelper.TestApp.HostedServices
                     _logger.LogDebug("ProducerExampleService.ExecuteAsync Iteration: {i} RandomNumber: {RandomNumber}", i, rand);
                 }
                 
-                await _kafkaProducer.ProduceMessageToKafkaAsync("Testing", new Confluent.Kafka.Message<string, string>() { Key = rand.ToString(), Value = rand.ToString() });
+                await _kafkaProducer.ProduceMessageToKafkaAsync("Testing", "TestTopic01", new Confluent.Kafka.Message<string, string>() { Key = rand.ToString(), Value = rand.ToString() }, cancellationToken);
                 await Task.Delay(10, cancellationToken);
                 i++;
             }

@@ -105,7 +105,7 @@ namespace Creos.KafkaHelper.Producer
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "KafkaHelper | KafkaProduer.ProduceMessageToKafkaAsync ProducerName: {ProducerName} Topic: {Topic}, Key: {Key}", producerName, topic, message);
+                _logger.LogError(ex, "KafkaHelper | KafkaProduer.ProduceMessageToKafkaAsync ProducerName: {ProducerName} Topic: {Topic}, Key: {Key}", producerName, topic, message.Key);
                 throw;
             }
         }
